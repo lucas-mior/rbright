@@ -1,11 +1,12 @@
-use nix::unistd::getppid;
+// use nix::unistd::getppid;
 use std::process::exit;
 use std::env;
 use std::fs;
 use std::cmp;
 
-static NUMBERS: &'static [i32] = &[0, 10, 20, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 93, 96, 100];
-static DEF_OPACITY: usize = 13;
+static NUMBERS: &'static [i32] = &[0, 200, 508, 711, 996, 1394, 1952, 2733, 3827, 5347, 7142];
+static BRIGHT_FILE: &'static str = "brightness";
+static DEF_OPACITY: usize = 8;
 
 static USAGE: &str = 
 "rurxvt_opacity [-+=h]
@@ -21,38 +22,31 @@ macro_rules! usage {
 
 fn main() {
     let argv: Vec<String> = env::args().collect();
-    const NAME: &str = "opacity";
-    const CACHE: &str = "/tmp";
-    let window_id: i32;
+    let mut bright: i32;
+    let mut index: usize;
+
+    bright = match fs::read_to_string(&BRIGHT_FILE) {
+        Ok(data) => data.parse().unwrap(),
+        Err(_) => NUMBERS[DEF_OPACITY],
+    };
+    index = NUMBERS.iter().position(|&x| x == bright).unwrap();
 
     if argv.len() <= 1 {
-        usage!();
+        println!("🔆 {}", index);
         exit(1);
-    } else {
-        window_id = getppid().into();
     }
 
-    let file = format!("{}/{}_{}", CACHE, NAME, window_id);
-
-    let mut current: usize;
-    current = match fs::read_to_string(&file) {
-        Ok(data) => data.parse().unwrap(),
-        Err(_) => DEF_OPACITY,
-    };
-
     match argv[1].as_str() {
-        "-" => current = cmp::max(current - 1, 0),
-        "+" => current = cmp::min(current + 1, NUMBERS.len() - 1),
-        "=" => current = NUMBERS.len() - 1,
+        "-" => index = cmp::max(index - 1, 0),
+        "+" => index = cmp::min(index + 1, NUMBERS.len() - 1),
+        "=" => index = NUMBERS.len() - 1,
         _ => { 
             usage!(); 
             exit(1);
         }
     };
 
-    fs::write(file, current.to_string()).expect("Unable to write file");
-    print!("\x1b]011;[{}]#000000\x07", NUMBERS[current]); //background
-    print!("\x1b]708;[{}]#000000\x07", NUMBERS[current]); //border
-
+    fs::write(BRIGHT_FILE, NUMBERS[index].to_string()).expect("Unable to write file");
+    println!("🔆 {}", index);
     return;
 }
