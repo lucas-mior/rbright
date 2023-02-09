@@ -48,5 +48,9 @@ fn main() {
 
     let bright_env = env::var("BRIGHT").unwrap();
     println!("BRIGHT: {}", bright_env);
+    
+    let dirs = fs::read_dir("/proc/");
+    println!("dirs: {:?}", dirs);
+
     return;
 }
