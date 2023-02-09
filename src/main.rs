@@ -2,7 +2,6 @@ use std::process::exit;
 use std::env;
 use std::fs;
 use libc;
-// use nix::sys::signal;
 
 static NUMBERS: &'static [i32] = &[0, 200, 508, 711, 996, 1394, 1952, 2733, 3827, 5347, 7142];
 static BRIGHT_FILE: &'static str = "brightness";
@@ -49,7 +48,6 @@ fn main() {
     println!("🔆 {}", index);
 
     let bright = env::var("BRIGHT").unwrap();
-    println!("BRIGHT: {}", bright);
     let bright: i32 = bright.parse().unwrap();
     
     let dirs = match fs::read_dir("/proc/") {
@@ -65,10 +63,8 @@ fn main() {
         let pid = check_pid(&d.path().to_string_lossy().to_string());
         if pid != 0 {
             unsafe {
-                println!("unsafe: {} {}", pid, bright);
                 libc::kill(pid, libc::SIGRTMIN() + bright);
             }
-            // signal::kill(pid, signal::try_from(bright));
         }
     }
 
