@@ -9,10 +9,10 @@ static BRIGHT_FILE: &'static str = "brightness";
 static DEF_OPACITY: usize = 8;
 
 static USAGE: &str = 
-"rurxvt_opacity [-+=h]
+"bright [-+=h]
 - -- decrease
 + -- increase
-= -- set 100% opaque
+= -- set 100%
 h -- print this help message";
 macro_rules! usage {
     () => { 
