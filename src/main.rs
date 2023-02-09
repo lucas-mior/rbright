@@ -2,7 +2,6 @@
 use std::process::exit;
 use std::env;
 use std::fs;
-use std::cmp;
 
 static NUMBERS: &'static [i32] = &[0, 200, 508, 711, 996, 1394, 1952, 2733, 3827, 5347, 7142];
 static BRIGHT_FILE: &'static str = "brightness";
