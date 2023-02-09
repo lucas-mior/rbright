@@ -22,14 +22,12 @@ macro_rules! usage {
 
 fn main() {
     let argv: Vec<String> = env::args().collect();
-    let mut bright: i32;
-    let mut index: usize;
 
-    bright = match fs::read_to_string(&BRIGHT_FILE) {
+    let bright = match fs::read_to_string(&BRIGHT_FILE) {
         Ok(data) => data.parse().unwrap(),
         Err(_) => NUMBERS[DEF_OPACITY],
     };
-    index = NUMBERS.iter().position(|&x| x == bright).unwrap();
+    let mut index: usize = NUMBERS.iter().position(|&x| x == bright).unwrap();
 
     if argv.len() <= 1 {
         println!("🔆 {}", index);
@@ -37,8 +35,8 @@ fn main() {
     }
 
     match argv[1].as_str() {
-        "-" => index = cmp::max(index - 1, 0),
-        "+" => index = cmp::min(index + 1, NUMBERS.len() - 1),
+        "-" => index = if index >= 1 { index - 1 } else { index },
+        "+" => index = if index < NUMBERS.len() - 1 { index + 1 } else { index },
         "=" => index = NUMBERS.len() - 1,
         _ => { 
             usage!(); 
@@ -48,5 +46,8 @@ fn main() {
 
     fs::write(BRIGHT_FILE, NUMBERS[index].to_string()).expect("Unable to write file");
     println!("🔆 {}", index);
+
+    let bright_env = env::var("BRIGHT").unwrap();
+    println!("BRIGHT: {}", bright_env);
     return;
 }
