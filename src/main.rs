@@ -1,8 +1,11 @@
-use std::process::exit;
-use std::env;
+use std::process;
 use std::fs;
+use std::env;
+use std::fs::File;
+use std::io::Write;
 use libc;
 
+#[derive(Default)]
 struct Brightness {
     file: String,
     string: String,
@@ -43,7 +46,6 @@ fn create_levels(last: i32) {
     let quotient: f64 = f64::powf(last as f64 / first as f64, m);
 
     unsafe {
-        let mut i: usize;
         LEVELS[0] = 0;
         LEVELS[1] = 1;
         LEVELS[2] = first;
@@ -53,6 +55,23 @@ fn create_levels(last: i32) {
         LEVELS[NLEVELS - 1] = last;
     }
     return;
+}
+
+fn get_bright(bright: &mut Brightness) {
+    println!("bright.file: {}", bright.file);
+    let current = match fs::read_to_string(&bright.file) {
+        Ok(data) => { println!("data={}", data); data.trim().parse().unwrap() },
+        Err(_) => { println!("failed get_bright"); process::exit(1) },
+    };
+    bright.num = current;
+}
+
+fn save_new(new_bright: &Brightness) {
+    let mut file = File::create(&new_bright.file).unwrap();
+
+    unsafe {
+        writeln!(&mut file, "{}", LEVELS[new_bright.index]).unwrap();
+    }
 }
 
 static USAGE: &str = 
@@ -70,29 +89,40 @@ macro_rules! usage {
 fn main() {
     let argv: Vec<String> = env::args().collect();
 
-    let bright = match fs::read_to_string(&BRIGHT_FILE) {
-        Ok(data) => data.parse().unwrap(),
-        Err(_) => NUMBERS[DEF_OPACITY],
-    };
-    let mut index: usize = NUMBERS.iter().position(|&x| x == bright).unwrap();
+    let mut max_bright: Brightness = Brightness::default();
+    let mut old_bright: Brightness = Brightness::default();
+    let mut new_bright: Brightness = Brightness::default();
+
+    max_bright.file = format!("{}/max_brightness", BRIGHT_DIR);
+    old_bright.file = format!("{}/brightness", BRIGHT_DIR);
+    new_bright.file = format!("{}/brightness", BRIGHT_DIR);
+
+    get_bright(&mut max_bright);
+    create_levels(max_bright.num);
+    get_bright(&mut old_bright);
 
     if argv.len() <= 1 {
-        println!("🔆 {}", index);
-        exit(1);
+        println!("🔆 {}", old_bright.index);
+        process::exit(1);
     }
 
-    match argv[1].as_str() {
-        "-" => index = if index >= 1 { index - 1 } else { index },
-        "+" => index = if index < NUMBERS.len() - 1 { index + 1 } else { index },
-        "=" => index = NUMBERS.len() - 1,
-        _ => { 
-            usage!(); 
-            exit(1);
-        }
-    };
+    unsafe {
+        new_bright.index = match argv[1].as_str() {
+            "-" => if old_bright.index >= 1 { old_bright.index - 1 } else { old_bright.index },
+            "+" => if old_bright.index < LEVELS.len() - 1 { old_bright.index + 1 } else { old_bright.index },
+            "=" => LEVELS.len() - 1,
+            _ => { 
+                usage!(); 
+                process::exit(1);
+            }
+        };
+    }
 
-    fs::write(BRIGHT_FILE, NUMBERS[index].to_string()).expect("Unable to write file");
-    println!("🔆 {}", index);
+    save_new(&new_bright);
+    unsafe {
+        fs::write(&new_bright.file, LEVELS[new_bright.index].to_string()).expect("Unable to write file");
+        println!("🔆 {}", new_bright.index);
+    }
 
     let bright = env::var("BRIGHT").unwrap();
     let bright: i32 = bright.parse().unwrap();
@@ -101,7 +131,7 @@ fn main() {
         Ok(dirs) => dirs,
         Err(error) => {
             println!("Error: {}", error); 
-            exit(1);
+            process::exit(1);
         },
     };
 
