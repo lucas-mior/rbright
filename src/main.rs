@@ -3,10 +3,57 @@ use std::env;
 use std::fs;
 use libc;
 
-static NUMBERS: &'static [i32] = &[0, 200, 508, 711, 996, 1394, 1952, 2733, 3827, 5347, 7142];
-static BRIGHT_FILE: &'static str = "brightness";
-static DEF_OPACITY: usize = 8;
+struct Brightness {
+    file: String,
+    string: String,
+    num: i32,
+    index: usize,
+}
+
+const NLEVELS: usize = 11;
+static mut LEVELS: [i32; NLEVELS] = [0; NLEVELS];
+
+static BRIGHT_DIR: &'static str = "/sys/class/backlight/intel_backlight";
 static EXE_NAME: &str = "dwmblocks";
+
+fn between(a: i32, x: i32, b: i32) -> bool {
+    return x < b && a <= x;
+}
+
+fn find_index(value: i32) -> usize {
+    let mut i: usize = 0;
+
+    unsafe {
+        while i <= NLEVELS - 2 {
+            if between(LEVELS[i], value, LEVELS[i+1]) {
+                return i;
+            } else {
+                i += 1;
+            }
+        }
+    }
+
+    return NLEVELS - 1;
+}
+
+fn create_levels(last: i32) {
+    let first = last / 60;
+    let n = NLEVELS - 2;
+    let m: f64 = 1 as f64 / (n-1) as f64;
+    let quotient: f64 = f64::powf(last as f64 / first as f64, m);
+
+    unsafe {
+        let mut i: usize;
+        LEVELS[0] = 0;
+        LEVELS[1] = 1;
+        LEVELS[2] = first;
+        for i in 3..NLEVELS-1 {
+            LEVELS[i] = (LEVELS[i - 1] as f64 * quotient) as i32;
+        }
+        LEVELS[NLEVELS - 1] = last;
+    }
+    return;
+}
 
 static USAGE: &str = 
 "bright [-+=h]
