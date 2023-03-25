@@ -3,7 +3,6 @@ use std::fs;
 use std::env;
 use std::fs::File;
 use std::io::Write;
-use libc;
 
 #[derive(Default)]
 struct Brightness {
@@ -15,11 +14,11 @@ struct Brightness {
 const NLEVELS: usize = 11;
 static mut LEVELS: [i32; NLEVELS] = [0; NLEVELS];
 
-static BRIGHT_DIR: &'static str = "/sys/class/backlight/intel_backlight";
+static BRIGHT_DIR: &str = "/sys/class/backlight/intel_backlight";
 static EXE_NAME: &str = "dwmblocks";
 
 fn between(a: i32, x: i32, b: i32) -> bool {
-    return x < b && a <= x;
+    x < b && a <= x
 }
 
 fn find_index(value: i32) -> usize {
@@ -35,13 +34,13 @@ fn find_index(value: i32) -> usize {
         }
     }
 
-    return NLEVELS - 1;
+    NLEVELS - 1
 }
 
 fn create_levels(last: i32) {
     let first = last / 60;
     let n = NLEVELS - 2;
-    let m: f64 = 1 as f64 / (n-1) as f64;
+    let m: f64 = 1_f64 / (n-1) as f64;
     let quotient: f64 = f64::powf(last as f64 / first as f64, m);
 
     unsafe {
@@ -52,17 +51,16 @@ fn create_levels(last: i32) {
             LEVELS[i] = (LEVELS[i - 1] as f64 * quotient) as i32;
         }
         LEVELS[NLEVELS - 1] = last;
-    println!("created levels: {:?}", LEVELS);
     }
-    // process::exit(0);
-    return;
 }
 
 fn get_bright(bright: &mut Brightness) {
-    println!("bright.file: {}", bright.file);
     let current = match fs::read_to_string(&bright.file) {
-        Ok(data) => { println!("data={}", data); data.trim().parse().unwrap() },
-        Err(_) => { println!("failed get_bright"); process::exit(1) },
+        Ok(data) => { data.trim().parse().unwrap() },
+        Err(e) => { 
+            eprintln!("Error reading brightness: {e}"); 
+            process::exit(1) 
+        },
     };
     bright.num = current;
     bright.index = find_index(bright.num);
@@ -78,9 +76,8 @@ fn save_new(new_bright: &Brightness) {
     };
 
     unsafe {
-        if let Err(_) = writeln!(&mut file, "{}", LEVELS.get(new_bright.index).unwrap_or(&0)) {
+        if writeln!(&mut file, "{}", LEVELS.get(new_bright.index).unwrap_or(&0)).is_err() {
             // eprintln!("Error writing to file: {}", e);
-            return;
         }
     }
 }
@@ -155,32 +152,30 @@ fn main() {
             }
         }
     }
-
-    return;
 }
 
-fn check_pid(path: &String) -> i32 {
+fn check_pid(path: &str) -> i32 {
     let statfile = format!("{}/{}", path, "stat");
     let data = match fs::read_to_string(&statfile) {
         Ok(data) => data,
         Err(_) => return 0,
     };
-    let data: Vec<&str> = data.split("(").collect();
+    let data: Vec<&str> = data.split('(').collect();
     if data.len() < 2 {
         return 0;
     }
     let data = data[1];
-    let data: Vec<&str> = data.split(")").collect(); 
-    if data.len() < 1 {
+    let data: Vec<&str> = data.split(')').collect(); 
+    if data.is_empty() {
         return 0;
     }
     let data = data[0];
     if data == EXE_NAME {
-        let pid: Vec<&str> = path.split("/").collect();
+        let pid: Vec<&str> = path.split('/').collect();
         if pid.len() >= 3 {
             let pid = pid[2];
             return pid.parse().unwrap();
         }
     }
-    return 0;
+    0
 }
