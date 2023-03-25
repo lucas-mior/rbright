@@ -8,7 +8,6 @@ use libc;
 #[derive(Default)]
 struct Brightness {
     file: String,
-    string: String,
     num: i32,
     index: usize,
 }
