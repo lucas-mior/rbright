@@ -53,7 +53,9 @@ fn create_levels(last: i32) {
             LEVELS[i] = (LEVELS[i - 1] as f64 * quotient) as i32;
         }
         LEVELS[NLEVELS - 1] = last;
+    println!("created levels: {:?}", LEVELS);
     }
+    // process::exit(0);
     return;
 }
 
@@ -64,13 +66,23 @@ fn get_bright(bright: &mut Brightness) {
         Err(_) => { println!("failed get_bright"); process::exit(1) },
     };
     bright.num = current;
+    bright.index = find_index(bright.num);
 }
 
 fn save_new(new_bright: &Brightness) {
-    let mut file = File::create(&new_bright.file).unwrap();
+    let mut file = match File::create(&new_bright.file) {
+        Ok(file) => file,
+        Err(e) => {
+            eprintln!("Error creating file: {}", e);
+            return;
+        }
+    };
 
     unsafe {
-        writeln!(&mut file, "{}", LEVELS[new_bright.index]).unwrap();
+        if let Err(_) = writeln!(&mut file, "{}", LEVELS.get(new_bright.index).unwrap_or(&0)) {
+            // eprintln!("Error writing to file: {}", e);
+            return;
+        }
     }
 }
 
