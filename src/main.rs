@@ -1,7 +1,6 @@
 use std::process;
 use std::fs;
 use std::env;
-use std::fs::File;
 use std::io::Write;
 
 #[derive(Default)]
@@ -67,7 +66,7 @@ fn get_bright(bright: &mut Brightness) {
 }
 
 fn save_new(new_bright: &Brightness) {
-    let mut file = match File::create(&new_bright.file) {
+    let mut file = match fs::File::create(&new_bright.file) {
         Ok(file) => file,
         Err(e) => {
             eprintln!("Error creating file: {}", e);
