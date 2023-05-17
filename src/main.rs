@@ -11,7 +11,7 @@ use send_signal::send_signal;
 struct Brightness {
     file: String,
     absolute: i32,
-    index: usize,
+    index: i32,
 }
 
 const NLEVELS: usize = 11;
@@ -23,20 +23,20 @@ fn between(a: i32, x: i32, b: i32) -> bool {
     x < b && a <= x
 }
 
-fn find_index(value: i32) -> usize {
+fn find_index(value: i32) -> i32 {
     let mut i: usize = 0;
 
     unsafe {
         while i <= NLEVELS - 2 {
             if between(LEVELS[i], value, LEVELS[i+1]) {
-                return i;
+                return i as i32;
             } else {
                 i += 1;
             }
         }
     }
 
-    NLEVELS - 1
+    (NLEVELS - 1) as i32
 }
 
 fn create_levels(last: i32) {
@@ -79,7 +79,7 @@ fn save_new(new_bright: &Brightness) {
 
     let level;
     unsafe {
-        level = LEVELS.get(new_bright.index).unwrap_or(&0);
+        level = LEVELS[new_bright.index as usize];
     }
     if writeln!(&mut file, "{}", level).is_err() {
     }
@@ -120,8 +120,8 @@ fn main() {
     unsafe {
         new_bright.index = match argv[1].as_str() {
             "-" => cmp::max(old_bright.index - 1, 0),
-            "+" => cmp::min(old_bright.index + 1, LEVELS.len() - 1),
-            "=" => LEVELS.len() - 1,
+            "+" => cmp::min(old_bright.index + 1, LEVELS.len() as i32 - 1),
+            "=" => LEVELS.len() as i32 - 1,
             _ => { 
                 usage!(); 
                 process::exit(1);
@@ -132,7 +132,7 @@ fn main() {
     save_new(&new_bright);
     let level;
     unsafe {
-        level = LEVELS[new_bright.index].to_string()
+        level = LEVELS[new_bright.index as usize].to_string()
     }
     fs::write(&new_bright.file, level).expect("Unable to write file");
     println!("🔆 {}", new_bright.index);
