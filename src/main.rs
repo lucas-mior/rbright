@@ -14,7 +14,6 @@ const NLEVELS: usize = 11;
 static mut LEVELS: [i32; NLEVELS] = [0; NLEVELS];
 
 static BRIGHT_DIR: &str = "/sys/class/backlight/intel_backlight";
-static EXE_NAME: &str = "dwmblocks";
 
 fn between(a: i32, x: i32, b: i32) -> bool {
     x < b && a <= x
@@ -131,9 +130,14 @@ fn main() {
         println!("🔆 {}", new_bright.index);
     }
 
-    let bright = env::var("BRIGHT").unwrap();
-    let bright: i32 = bright.parse().unwrap();
-    
+    if argv.len() >= 3 {
+        let signal_number = env::var("BRIGHT").unwrap();
+        let signal_number: i32 = signal_number.parse().unwrap();
+        send_signal(signal_number, &argv[2]);
+    }
+}
+
+fn send_signal(signal_number: i32, program: &str) {
     let dirs = match fs::read_dir("/proc/") {
         Ok(dirs) => dirs,
         Err(error) => {
@@ -144,16 +148,16 @@ fn main() {
 
     for dir in dirs {
         let d = dir.unwrap();
-        let pid = check_pid(&d.path().to_string_lossy().to_string());
+        let pid = check_pid(&d.path().to_string_lossy().to_string(), program);
         if pid != 0 {
             unsafe {
-                libc::kill(pid, libc::SIGRTMIN() + bright);
+                libc::kill(pid, libc::SIGRTMIN() + signal_number);
             }
         }
     }
 }
 
-fn check_pid(path: &str) -> i32 {
+fn check_pid(path: &str, program: &str) -> i32 {
     let statfile = format!("{}/{}", path, "stat");
     let data = match fs::read_to_string(&statfile) {
         Ok(data) => data,
@@ -169,7 +173,7 @@ fn check_pid(path: &str) -> i32 {
         return 0;
     }
     let data = data[0];
-    if data == EXE_NAME {
+    if data == program {
         let pid: Vec<&str> = path.split('/').collect();
         if pid.len() >= 3 {
             let pid = pid[2];
