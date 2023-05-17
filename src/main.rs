@@ -3,6 +3,9 @@ use std::fs;
 use std::env;
 use std::io::Write;
 
+mod send_signal;
+use send_signal::send_signal;
+
 #[derive(Default)]
 struct Brightness {
     file: String,
@@ -135,50 +138,4 @@ fn main() {
         let signal_number: i32 = signal_number.parse().unwrap();
         send_signal(signal_number, &argv[2]);
     }
-}
-
-fn send_signal(signal_number: i32, program: &str) {
-    let dirs = match fs::read_dir("/proc/") {
-        Ok(dirs) => dirs,
-        Err(error) => {
-            println!("Error: {}", error); 
-            process::exit(1);
-        },
-    };
-
-    for dir in dirs {
-        let d = dir.unwrap();
-        let pid = check_pid(&d.path().to_string_lossy().to_string(), program);
-        if pid != 0 {
-            unsafe {
-                libc::kill(pid, libc::SIGRTMIN() + signal_number);
-            }
-        }
-    }
-}
-
-fn check_pid(path: &str, program: &str) -> i32 {
-    let statfile = format!("{}/{}", path, "stat");
-    let data = match fs::read_to_string(&statfile) {
-        Ok(data) => data,
-        Err(_) => return 0,
-    };
-    let data: Vec<&str> = data.split('(').collect();
-    if data.len() < 2 {
-        return 0;
-    }
-    let data = data[1];
-    let data: Vec<&str> = data.split(')').collect(); 
-    if data.is_empty() {
-        return 0;
-    }
-    let data = data[0];
-    if data == program {
-        let pid: Vec<&str> = path.split('/').collect();
-        if pid.len() >= 3 {
-            let pid = pid[2];
-            return pid.parse().unwrap();
-        }
-    }
-    0
 }
