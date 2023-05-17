@@ -9,7 +9,7 @@ use send_signal::send_signal;
 #[derive(Default)]
 struct Brightness {
     file: String,
-    num: i32,
+    number: i32,
     index: usize,
 }
 
@@ -63,8 +63,8 @@ fn get_bright(bright: &mut Brightness) {
             process::exit(1) 
         },
     };
-    bright.num = current;
-    bright.index = find_index(bright.num);
+    bright.number = current;
+    bright.index = find_index(bright.number);
 }
 
 fn save_new(new_bright: &Brightness) {
@@ -107,7 +107,7 @@ fn main() {
     new_bright.file = format!("{}/brightness", BRIGHT_DIR);
 
     get_bright(&mut max_bright);
-    create_levels(max_bright.num);
+    create_levels(max_bright.number);
     get_bright(&mut old_bright);
 
     if argv.len() <= 1 {
