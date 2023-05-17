@@ -2,6 +2,7 @@ use std::process;
 use std::fs;
 use std::env;
 use std::io::Write;
+use std::cmp;
 
 mod send_signal;
 use send_signal::send_signal;
@@ -57,7 +58,7 @@ fn create_levels(last: i32) {
 
 fn get_bright(bright: &mut Brightness) {
     let current = match fs::read_to_string(&bright.file) {
-        Ok(data) => { data.trim().parse().unwrap() },
+        Ok(data) => data.trim().parse().unwrap(),
         Err(e) => { 
             eprintln!("Error reading brightness: {e}"); 
             process::exit(1) 
@@ -118,8 +119,8 @@ fn main() {
 
     unsafe {
         new_bright.index = match argv[1].as_str() {
-            "-" => if old_bright.index >= 1 { old_bright.index - 1 } else { old_bright.index },
-            "+" => if old_bright.index < LEVELS.len() - 1 { old_bright.index + 1 } else { old_bright.index },
+            "-" => cmp::max(old_bright.index - 1, 0),
+            "+" => cmp::min(old_bright.index + 1, LEVELS.len() - 1),
             "=" => LEVELS.len() - 1,
             _ => { 
                 usage!(); 
