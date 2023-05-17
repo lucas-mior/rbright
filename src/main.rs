@@ -76,10 +76,11 @@ fn save_new(new_bright: &Brightness) {
         }
     };
 
+    let level;
     unsafe {
-        if writeln!(&mut file, "{}", LEVELS.get(new_bright.index).unwrap_or(&0)).is_err() {
-            // eprintln!("Error writing to file: {}", e);
-        }
+        level = LEVELS.get(new_bright.index).unwrap_or(&0);
+    }
+    if writeln!(&mut file, "{}", level).is_err() {
     }
 }
 
