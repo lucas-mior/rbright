@@ -130,10 +130,12 @@ fn main() {
     }
 
     save_new(&new_bright);
+    let level;
     unsafe {
-        fs::write(&new_bright.file, LEVELS[new_bright.index].to_string()).expect("Unable to write file");
-        println!("🔆 {}", new_bright.index);
+        level = LEVELS[new_bright.index].to_string()
     }
+    fs::write(&new_bright.file, level).expect("Unable to write file");
+    println!("🔆 {}", new_bright.index);
 
     if argv.len() >= 3 {
         let signal_number = env::var("BRIGHT").unwrap();
