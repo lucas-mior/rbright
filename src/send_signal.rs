@@ -8,7 +8,7 @@ pub fn send_signal(signal_number: i32, program: &str) {
     let dirs = match fs::read_dir("/proc/") {
         Ok(dirs) => dirs,
         Err(error) => {
-            println!("Error: {}", error); 
+            println!("Error opening /proc/: {}", error); 
             process::exit(1);
         },
     };
